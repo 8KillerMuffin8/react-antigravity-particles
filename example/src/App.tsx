@@ -48,7 +48,7 @@ function App() {
             >
               Some chip
             </div>
-            <span style={{fontSize: '46px', fontFamily: 'sans-serif', fontWeight: 'lighter'}}>
+            <span style={{fontSize: '50px', fontFamily: 'sans-serif', fontWeight: 'lighter'}}>
             Click me
             </span>
             <button
