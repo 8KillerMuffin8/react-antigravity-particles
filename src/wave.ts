@@ -1,0 +1,32 @@
+import { WAVE_LIFESPAN } from "./constants.js";
+import { Particle } from "./particle.js";
+
+const FORCE_STRENGTH = 0.001;
+
+export class Wave {
+  private age = 0;
+  public strength = 0;
+  constructor(
+    public x: number,
+    public y: number,
+    public radius: number,
+    public bornAt: number
+  ) {}
+
+  update(dt: number) {
+    this.radius += 10;
+    this.age = dt - this.bornAt;
+    this.strength = Math.max(0, ((WAVE_LIFESPAN - this.age) / this.age));
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {}
+
+  pushParticles(particles: Particle[]) {
+    particles.forEach((particle) => {
+      const distance = particle.dist({ x: this.x, y: this.y });
+      if (Math.abs(distance - this.radius) < 10) {
+        particle.applyForce({ x: (particle.x - this.x) * FORCE_STRENGTH * this.strength, y: (particle.y - this.y) * FORCE_STRENGTH * this.strength });
+      }
+    });
+  }
+}
