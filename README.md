@@ -2,6 +2,10 @@
 
 A React component library for creating beautiful particle animations with SVG attractors. Particles flow and react to SVG shapes, creating dynamic visual effects perfect for interactive UIs. Inspired by Google's Anti Gravity code editor.
 
+## Example
+
+[View live demo →](https://8KillerMuffin8.github.io/react-antigravity-particles)
+
 ## Installation
 
 ```bash
