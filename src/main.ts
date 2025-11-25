@@ -3,16 +3,25 @@ import { Particle } from "./particle.js";
 import { Wave } from "./wave.js";
 import { Attractor } from "./attractor.js";
 
-const WIDTH = window.innerWidth /1.5;
-const HEIGHT = window.innerHeight /1.5;
+const WIDTH = window.innerWidth / 1.5;
+const HEIGHT = window.innerHeight / 1.5;
 
 const EDGE_EXTENSION = 50; // Amount to extend calculations beyond visible area
 const EXTENDED_WIDTH = WIDTH + EDGE_EXTENSION * 2;
 const EXTENDED_HEIGHT = HEIGHT + EDGE_EXTENSION * 2;
 
+// Spatial Grid Configuration
+const GRID_SIZE = 30; // Cell size (adjust based on interaction radius)
+const GRID_COLS = Math.ceil(EXTENDED_WIDTH / GRID_SIZE);
+const GRID_ROWS = Math.ceil(EXTENDED_HEIGHT / GRID_SIZE);
+const grid: Particle[][] = new Array(GRID_COLS * GRID_ROWS)
+  .fill(null)
+  .map(() => []);
+
 const RESOLUTION = 15;
 const POS_RANDOM_OFFSET = 6;
 const ATTRACTOR_FORCE = 0.0005;
+const WIND_FORCE = 0.05;
 
 const PARTICLE_DEFAULT_COLOR = "black";
 const ATTRACTOR_COLOR = "#3492eb";
@@ -90,7 +99,14 @@ let applySvgForce = false;
 
 document.addEventListener("mousedown", () => {
   applySvgForce = !applySvgForce;
-  waves.push(new Wave(EDGE_EXTENSION + WIDTH / 2, EDGE_EXTENSION + HEIGHT / 2, 10, performance.now()));
+  waves.push(
+    new Wave(
+      EDGE_EXTENSION + WIDTH / 2,
+      EDGE_EXTENSION + HEIGHT / 2,
+      10,
+      performance.now()
+    )
+  );
   particles.forEach((particle) => {
     particle.color = particle.defaultColor.clone();
     particle.size = 1;
@@ -106,6 +122,10 @@ if (canvas) {
   const ctx = canvas.getContext("2d");
   if (ctx) {
     function animate(dt: number) {
+      const time = dt * 0.001; // Convert to seconds
+      const windX = Math.sin(time * 0.5) * Math.cos(time * 0.3) * WIND_FORCE;
+      const windY = Math.cos(time * 0.4) * Math.sin(time * 0.2) * WIND_FORCE;
+
       if (waves.length > 0) {
         waves.forEach((wave) => {
           wave.update(dt);
@@ -137,20 +157,72 @@ if (canvas) {
         }
       }
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
-      
+
+      // 1. Reset Grid
+      for (let i = 0; i < grid.length; i++) {
+        grid[i].length = 0;
+      }
+
+      // 2. Populate Grid
+      particles.forEach((p) => {
+        const col = Math.floor(p.x / GRID_SIZE);
+        const row = Math.floor(p.y / GRID_SIZE);
+        if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+          grid[row * GRID_COLS + col].push(p);
+        }
+      });
+
       // Translate context to center visible area within extended coordinate system
       ctx?.save();
       ctx?.translate(-EDGE_EXTENSION, -EDGE_EXTENSION);
 
       particles.forEach((particle, index) => {
         const distFromAttractor = particle.dist(positions[index]);
+
+        // 3. Find neighbors (check current cell and 8 surrounding cells)
+        const col = Math.floor(particle.x / GRID_SIZE);
+        const row = Math.floor(particle.y / GRID_SIZE);
+        const neighbors: Particle[] = [];
+
+        // for (let i = -1; i <= 1; i++) {
+        //   for (let j = -1; j <= 1; j++) {
+        //     const checkCol = col + i;
+        //     const checkRow = row + j;
+
+        //     if (
+        //       checkCol >= 0 &&
+        //       checkCol < GRID_COLS &&
+        //       checkRow >= 0 &&
+        //       checkRow < GRID_ROWS
+        //     ) {
+        //       const cellParticles = grid[checkRow * GRID_COLS + checkCol];
+        //       for (let k = 0; k < cellParticles.length; k++) {
+        //         const other = cellParticles[k];
+        //         if (other !== particle) {
+        //           // Optional: Check exact distance if needed
+        //           // const d = particle.dist(other);
+        //           // if (d < SOME_RADIUS) neighbors.push(other);
+        //           neighbors.push(other);
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
+
+        // neighbors.forEach((neighbor) => {
+        //   particle.applyForce({
+        //     x: (neighbor.x - particle.x) * -0.00001,
+        //     y: (neighbor.y - particle.y) * -0.00001,
+        //   });
+        // });
+
         particle.applyForce({
           x:
             (positions[index].x - particle.x) *
-            (ATTRACTOR_FORCE * distFromAttractor),
+            (ATTRACTOR_FORCE * distFromAttractor) + windX,
           y:
             (positions[index].y - particle.y) *
-            (ATTRACTOR_FORCE * distFromAttractor),
+            (ATTRACTOR_FORCE * distFromAttractor) + windY,
         });
         if (applySvgForce) {
           attractor?.applyForce(particle);
@@ -162,7 +234,7 @@ if (canvas) {
       if (waves.length > 0) {
         waves.forEach((wave) => wave.draw(ctx!));
       }
-      
+
       ctx?.restore();
       requestAnimationFrame(animate);
     }

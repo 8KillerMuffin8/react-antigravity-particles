@@ -7,9 +7,3 @@ body {
     height: 100vh;
     background: white;
 }
-
-canvas {
-    border: 1px solid black;
-    border-radius: 10px;
-    overflow: visible;
-}
