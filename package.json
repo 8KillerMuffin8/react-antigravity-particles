@@ -2,14 +2,34 @@
   "name": "particles",
   "version": "1.0.0",
   "description": "Particles project with TypeScript modules",
+  "main": "./dist/particle-animation.umd.js",
+  "module": "./dist/particle-animation.es.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/particle-animation.es.js",
+      "require": "./dist/particle-animation.umd.js"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "dev": "tsc --watch"
+    "build": "tsc && vite build"
   },
   "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@types/tinycolor2": "^1.4.6",
-    "typescript": "^5.0.0"
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "^5.0.0",
+    "vite": "^7.2.4",
+    "vite-plugin-dts": "^4.5.4"
   },
   "dependencies": {
     "tinycolor2": "^1.6.0"
