@@ -49,14 +49,14 @@ export class Particle {
     );
   }
 
-  update(dt: number) {
+  update(deltaTime: number) {
     this.x = this.x + this.vx;
     this.y = this.y + this.vy;
     this.vx = this.vx * DAMPING_FACTOR;
     this.vy = this.vy * DAMPING_FACTOR;
     this.vx = Math.max(Math.min(this.vx, MAX_VELOCITY), -MAX_VELOCITY);
     this.vy = Math.max(Math.min(this.vy, MAX_VELOCITY), -MAX_VELOCITY);
-    this.age = dt - this.bornAt;
+    this.age = deltaTime - this.bornAt;
     if (this.x <= 0) {
       this.vx = -this.vx;
       this.x = 1;
@@ -77,7 +77,6 @@ export class Particle {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
-    // ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
     ctx.rect(this.x, this.y, this.size, this.size);
     let opacity = 1;
     if (this.age < FADE_IN_DURATION) {

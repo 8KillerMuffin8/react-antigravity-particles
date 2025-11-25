@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "particles": "link:..",
+    "react-antigravity-particles": "link:..",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

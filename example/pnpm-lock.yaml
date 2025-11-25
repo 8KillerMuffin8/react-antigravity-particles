@@ -8,12 +8,12 @@ importers:
 
   .:
     dependencies:
-      particles:
-        specifier: link:..
-        version: link:..
       react:
         specifier: ^19.2.0
         version: 19.2.0
+      react-antigravity-particles:
+        specifier: link:..
+        version: link:..
       react-dom:
         specifier: ^19.2.0
         version: 19.2.0(react@19.2.0)

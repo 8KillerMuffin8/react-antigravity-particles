@@ -8,7 +8,7 @@ export declare class Wave {
     private age;
     strength: number;
     constructor(x: number, y: number, radius: number, bornAt: number, lifespan: number);
-    update(dt: number): void;
+    update(deltaTime: number): void;
     draw(ctx: CanvasRenderingContext2D): void;
     pushParticles(particles: Particle[]): void;
 }

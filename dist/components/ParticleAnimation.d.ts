@@ -2,19 +2,18 @@ import { default as React } from 'react';
 interface ParticleAnimationProps {
     width?: number;
     height?: number;
-    edgeExtension?: number;
-    gridSize?: number;
     resolution?: number;
-    posRandomOffset?: number;
-    attractorForce?: number;
+    particlePositionRandomOffset?: number;
+    particleRestoreForce?: number;
     windForce?: number;
     particleDefaultColor?: string;
     particleDefaultSize?: number;
+    particleActiveSize?: number;
+    particleLifespan?: number;
     attractorColor?: string;
     attractorBackgroundColor?: string;
     attractorLoadingColor?: string;
     svgElement?: React.ReactElement;
-    particleLifespan?: number;
     waveLifespan?: number;
     isActive?: boolean;
 }

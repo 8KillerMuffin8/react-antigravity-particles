@@ -10,14 +10,13 @@ export declare class Attractor {
     private nearestX;
     private nearestY;
     private debugImage;
-    private attractorColor;
+    private particleActiveSize;
     private attractorColorObj;
     private backgroundColor;
     private loadingColor;
-    private nearestCollisionPoints;
-    constructor(x: number, y: number, svg: SVGElement | string, attractorColor: string, backgroundColor: string, loadingColor: string);
+    constructor(x: number, y: number, svg: SVGElement | string, attractorColor: string, backgroundColor: string, loadingColor: string, particleActiveSize?: number);
     private parseSVGString;
-    private force;
+    private attractionForce;
     private getSVGDimensions;
     private createShapeMatrix;
     isPointInside(worldX: number, worldY: number): boolean;

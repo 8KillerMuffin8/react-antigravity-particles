@@ -13,9 +13,9 @@ export class Wave {
     public lifespan: number
   ) {}
 
-  update(dt: number) {
+  update(deltaTime: number) {
     this.radius += 10;
-    this.age = dt - this.bornAt;
+    this.age = deltaTime - this.bornAt;
     this.strength = Math.max(0, ((this.lifespan - this.age) / this.age));
   }
 

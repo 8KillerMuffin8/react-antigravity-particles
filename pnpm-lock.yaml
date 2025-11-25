@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       react:
-        specifier: ^19.2.0
+        specifier: '>=16.8.0'
         version: 19.2.0
       react-dom:
-        specifier: ^19.2.0
+        specifier: '>=16.8.0'
         version: 19.2.0(react@19.2.0)
       tinycolor2:
         specifier: ^1.6.0

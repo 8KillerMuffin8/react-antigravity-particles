@@ -1,7 +1,7 @@
 {
-  "name": "particles",
-  "version": "1.0.0",
-  "description": "Particles project with TypeScript modules",
+  "name": "react-antigravity-particles",
+  "version": "0.0.1",
+  "description": "A React component library for creating beautiful particle animations with SVG attractors",
   "main": "./dist/particle-animation.umd.js",
   "module": "./dist/particle-animation.es.js",
   "types": "./dist/index.d.ts",

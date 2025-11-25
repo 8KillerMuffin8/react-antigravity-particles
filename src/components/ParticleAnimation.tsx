@@ -7,39 +7,39 @@ import { Attractor } from "../core/attractor";
 interface ParticleAnimationProps {
   width?: number;
   height?: number;
-  edgeExtension?: number;
-  gridSize?: number;
   resolution?: number;
-  posRandomOffset?: number;
-  attractorForce?: number;
+  particlePositionRandomOffset?: number;
+  particleRestoreForce?: number;
   windForce?: number;
   particleDefaultColor?: string;
   particleDefaultSize?: number;
+  particleActiveSize?: number;
+  particleLifespan?: number;
   attractorColor?: string;
   attractorBackgroundColor?: string;
   attractorLoadingColor?: string;
   svgElement?: React.ReactElement;
-  particleLifespan?: number;
   waveLifespan?: number;
   isActive?: boolean;
 }
 
+const EDGE_EXTENSION = 50;
+
 export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
   width = window.innerWidth / 1.5,
   height = window.innerHeight / 1.5,
-  edgeExtension = 50,
-  gridSize = 30,
   resolution = 15,
-  posRandomOffset = 6,
-  attractorForce = 0.0005,
+  particlePositionRandomOffset = 6,
+  particleRestoreForce = 0.0005,
   windForce = 0.05,
   particleDefaultColor = "black",
   particleDefaultSize = 1,
+  particleActiveSize = 1.5,
+  particleLifespan = 20000,
   attractorColor = "#3492eb",
   attractorBackgroundColor = "white",
   attractorLoadingColor = "rgba(255, 255, 0, 0.5)",
   svgElement,
-  particleLifespan = 20000,
   waveLifespan = 1000,
   isActive = false,
 }) => {
@@ -58,8 +58,8 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
       // Trigger wave when becoming active
       wavesRef.current.push(
         new Wave(
-          edgeExtension + width / 2,
-          edgeExtension + height / 2,
+          EDGE_EXTENSION + width / 2,
+          EDGE_EXTENSION + height / 2,
           10,
           performance.now(),
           waveLifespan
@@ -70,7 +70,7 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
         particle.size = particle.defaultSize;
       });
     }
-  }, [isActive, width, height, edgeExtension, waveLifespan]);
+  }, [isActive, width, height, waveLifespan]);
 
   // Memoize svgString to prevent re-initialization when svgElement prop changes reference but content is same
   const svgString = useMemo(() => {
@@ -81,46 +81,38 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
   useEffect(() => {
     if (svgString) {
       attractorRef.current = new Attractor(
-        edgeExtension + width / 2,
-        edgeExtension + height / 2,
+        EDGE_EXTENSION + width / 2,
+        EDGE_EXTENSION + height / 2,
         svgString,
         attractorColor,
         attractorBackgroundColor,
-        attractorLoadingColor
+        attractorLoadingColor,
+        particleActiveSize
       );
     } else {
       attractorRef.current = null;
     }
   }, [
-    svgString, 
-    width, 
-    height, 
-    edgeExtension, 
-    attractorColor, 
-    attractorBackgroundColor, 
-    attractorLoadingColor
+    svgString,
+    width,
+    height,
+    attractorColor,
+    attractorBackgroundColor,
+    attractorLoadingColor,
+    particleActiveSize,
   ]);
-
 
   // Main animation loop and particle initialization
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const extendedWidth = width + edgeExtension * 2;
-    const extendedHeight = height + edgeExtension * 2;
-    const gridCols = Math.ceil(extendedWidth / gridSize);
-    const gridRows = Math.ceil(extendedHeight / gridSize);
-
-    const grid: Particle[][] = new Array(gridCols * gridRows)
-      .fill(null)
-      .map(() => []);
+    const extendedWidth = width + EDGE_EXTENSION * 2;
+    const extendedHeight = height + EDGE_EXTENSION * 2;
 
     const particles = particlesRef.current;
-    // Only re-initialize particles if dimensions or resolution change significantly
-    // For now, we'll keep the existing logic of clearing and re-populating on these prop changes
-    particles.length = 0; 
-    
+    particles.length = 0;
+
     const waves = wavesRef.current;
     const positions: { x: number; y: number }[] = [];
     let animationFrameId: number;
@@ -128,21 +120,21 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
     // Initialize Particles
     for (let i = 0; i < extendedWidth / resolution; i++) {
       for (let j = 0; j < extendedHeight / resolution; j++) {
-        const posX =
+        const positionX =
           i * resolution +
-          (Math.random() * posRandomOffset - posRandomOffset / 2) +
+          (Math.random() * particlePositionRandomOffset - particlePositionRandomOffset / 2) +
           (j % 2 === 0 ? (extendedWidth % resolution) / 2 : 0);
-        const posY =
+        const positionY =
           j * resolution +
-          (Math.random() * posRandomOffset - posRandomOffset / 2);
+          (Math.random() * particlePositionRandomOffset - particlePositionRandomOffset / 2);
         positions.push({
-          x: posX,
-          y: posY,
+          x: positionX,
+          y: positionY,
         });
         particles.push(
           new Particle(
-            posX,
-            posY,
+            positionX,
+            positionY,
             0,
             0,
             performance.now(),
@@ -162,18 +154,18 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
 
     if (!ctx) return;
 
-    const animate = (dt: number) => {
-      const time = dt * 0.001; // Convert to seconds
-      const windX = Math.sin(time * 0.5) * Math.cos(time * 0.3) * windForce;
-      const windY = Math.cos(time * 0.4) * Math.sin(time * 0.2) * windForce;
+    const animate = (deltaTime: number) => {
+      const timeInSeconds = deltaTime * 0.001;
+      const windX = Math.sin(timeInSeconds * 0.5) * Math.cos(timeInSeconds * 0.3) * windForce;
+      const windY = Math.cos(timeInSeconds * 0.4) * Math.sin(timeInSeconds * 0.2) * windForce;
 
       if (waves.length > 0) {
         waves.forEach((wave) => {
-          wave.update(dt);
+          wave.update(deltaTime);
           wave.pushParticles(particles);
         });
         for (let i = waves.length - 1; i >= 0; i--) {
-          if (dt - waves[i].bornAt > waveLifespan) {
+          if (deltaTime - waves[i].bornAt > waveLifespan) {
             waves.splice(i, 1);
           }
         }
@@ -181,7 +173,7 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
 
       for (let i = 0; i < positions.length; i++) {
         if (
-          dt - particles[i]?.bornAt > particles[i]?.lifespan ||
+          deltaTime - particles[i]?.bornAt > particles[i]?.lifespan ||
           particles[i]?.isOutOfBounds()
         ) {
           const newParticle = new Particle(
@@ -189,7 +181,7 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
             positions[i].y,
             0,
             0,
-            dt,
+            deltaTime,
             particleLifespan * Math.random(),
             extendedWidth,
             extendedHeight,
@@ -202,39 +194,25 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Reset Grid
-      for (let i = 0; i < grid.length; i++) {
-        grid[i].length = 0;
-      }
-
-      // 2. Populate Grid
-      particles.forEach((p) => {
-        const col = Math.floor(p.x / gridSize);
-        const row = Math.floor(p.y / gridSize);
-        if (col >= 0 && col < gridCols && row >= 0 && row < gridRows) {
-          grid[row * gridCols + col].push(p);
-        }
-      });
-
       ctx.save();
-      ctx.translate(-edgeExtension, -edgeExtension);
+      ctx.translate(-EDGE_EXTENSION, -EDGE_EXTENSION);
 
       const attractor = attractorRef.current;
 
       particles.forEach((particle, index) => {
-        const distFromAttractor = particle.dist(positions[index]);
+        const distanceFromAttractor = particle.dist(positions[index]);
 
         particle.applyForce({
           x:
             (positions[index].x - particle.x) *
-              (attractorForce * distFromAttractor) +
+              (particleRestoreForce * distanceFromAttractor) +
             windX,
           y:
             (positions[index].y - particle.y) *
-              (attractorForce * distFromAttractor) +
+              (particleRestoreForce * distanceFromAttractor) +
             windY,
         });
-        
+
         // Apply attractor force if active
         if (isActiveRef.current) {
           attractor?.applyForce(particle);
@@ -242,8 +220,8 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
           particle.color = particle.defaultColor.clone();
           particle.size = particle.defaultSize;
         }
-        
-        particle.update(dt);
+
+        particle.update(deltaTime);
       });
 
       attractor?.draw(ctx);
@@ -264,18 +242,14 @@ export const ParticleAnimation: React.FC<ParticleAnimationProps> = ({
   }, [
     width,
     height,
-    edgeExtension,
-    gridSize,
     resolution,
-    posRandomOffset,
-    attractorForce,
+    particlePositionRandomOffset,
+    particleRestoreForce,
     windForce,
     particleDefaultColor,
     particleDefaultSize,
     particleLifespan,
     waveLifespan,
-    // Attractor dependencies are moved to separate effect, and reference is used here
-    // SVG element is no longer a dependency here to avoid reload
   ]);
 
   return <canvas ref={canvasRef} />;

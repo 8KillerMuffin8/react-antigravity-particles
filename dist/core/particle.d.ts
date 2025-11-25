@@ -20,7 +20,7 @@ export declare class Particle {
     private height;
     constructor(x: number, y: number, vx: number, vy: number, bornAt: number, lifespan: number, width: number, height: number, defaultColor: string, defaultSize: number);
     isOutOfBounds(): boolean;
-    update(dt: number): void;
+    update(deltaTime: number): void;
     draw(ctx: CanvasRenderingContext2D): void;
     dist(particle: Particle | Point): number;
     applyForce(force: {

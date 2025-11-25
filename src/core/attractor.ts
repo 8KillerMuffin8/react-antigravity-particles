@@ -11,26 +11,24 @@ export class Attractor {
   private nearestX: Int16Array | null = null;
   private nearestY: Int16Array | null = null;
   private debugImage: HTMLImageElement | null = null;
-  private attractorColor: string;
+  private particleActiveSize: number = 1;
   private attractorColorObj: tinycolor.Instance;
   private backgroundColor: string;
   private loadingColor: string;
-  private nearestCollisionPoints: Map<string, { x: number; y: number }> =
-    new Map();
-
   constructor(
     public x: number,
     public y: number,
     svg: SVGElement | string,
     attractorColor: string,
     backgroundColor: string,
-    loadingColor: string
+    loadingColor: string,
+    particleActiveSize: number = 1
   ) {
-    this.attractorColor = attractorColor;
     this.attractorColorObj = tinycolor(attractorColor);
     this.backgroundColor = backgroundColor;
     this.loadingColor = loadingColor;
-    
+    this.particleActiveSize = particleActiveSize;
+
     const svgElement = typeof svg === "string" ? this.parseSVGString(svg) : svg;
     if (svgElement) {
       this.createShapeMatrix(svgElement);
@@ -49,7 +47,7 @@ export class Attractor {
     console.error("Failed to parse SVG string");
     return null;
   }
-  private force = 2;
+  private attractionForce = 2;
 
   private getSVGDimensions(svg: SVGElement): { width: number; height: number } {
     // Try to get width and height from attributes
@@ -168,15 +166,6 @@ export class Attractor {
         }
       }
 
-      const trueCount = this.shapeMatrix.flat().filter(Boolean).length;
-      const totalPixels = width * height;
-      // console.log(`Shape matrix created: ${width}x${height}`);
-      // console.log(
-      //   `Has true values: ${trueCount} out of ${totalPixels} pixels (${(
-      //     (trueCount / totalPixels) *
-      //     100
-      //   ).toFixed(2)}%)`
-      // );
       this.computeNearestNeighborField(width, height);
     };
 
@@ -216,13 +205,6 @@ export class Attractor {
       const drawY = this.y - this.matrixHalfHeight;
       ctx.save();
       ctx.globalAlpha = 0.7;
-      //   ctx.drawImage(
-      //     this.debugImage,
-      //     drawX,
-      //     drawY,
-      //     this.matrixWidth,
-      //     this.matrixHeight
-      //   );
       ctx.restore();
     } else {
       ctx.save();
@@ -245,40 +227,39 @@ export class Attractor {
       const row = this.shapeMatrix[y];
       for (let x = 0; x < width; x++) {
         if (row[x]) {
-          const idx = y * width + x;
-          this.nearestX[idx] = x;
-          this.nearestY[idx] = y;
-          queue[tail++] = idx;
+          const index = y * width + x;
+          this.nearestX[index] = x;
+          this.nearestY[index] = y;
+          queue[tail++] = index;
         }
       }
     }
 
     while (head < tail) {
-      const idx = queue[head++];
-      const nx = this.nearestX[idx];
-      const ny = this.nearestY[idx];
-      const x = idx % width;
-      const y = (idx / width) | 0;
+      const index = queue[head++];
+      const nearestX = this.nearestX[index];
+      const nearestY = this.nearestY[index];
+      const x = index % width;
+      const y = (index / width) | 0;
 
       // Use standard 8-way connectivity for distance transform
-      const dxs = [0, 0, -1, 1, -1, 1, -1, 1];
-      const dys = [-1, 1, 0, 0, -1, -1, 1, 1];
+      const deltaXs = [0, 0, -1, 1, -1, 1, -1, 1];
+      const deltaYs = [-1, 1, 0, 0, -1, -1, 1, 1];
 
       for (let i = 0; i < 8; i++) {
-        const nx_c = x + dxs[i];
-        const ny_c = y + dys[i];
+        const neighborX = x + deltaXs[i];
+        const neighborY = y + deltaYs[i];
 
-        if (nx_c >= 0 && nx_c < width && ny_c >= 0 && ny_c < height) {
-          const nextIdx = ny_c * width + nx_c;
-          if (this.nearestX[nextIdx] === -1) {
-            this.nearestX[nextIdx] = nx;
-            this.nearestY[nextIdx] = ny;
-            queue[tail++] = nextIdx;
+        if (neighborX >= 0 && neighborX < width && neighborY >= 0 && neighborY < height) {
+          const nextIndex = neighborY * width + neighborX;
+          if (this.nearestX[nextIndex] === -1) {
+            this.nearestX[nextIndex] = nearestX;
+            this.nearestY[nextIndex] = nearestY;
+            queue[tail++] = nextIndex;
           }
         }
       }
     }
-    // console.log("Nearest neighbor field computed");
   }
 
   findNearestCollisionPoint(
@@ -292,39 +273,39 @@ export class Attractor {
     const clampedX = Math.max(0, Math.min(this.matrixWidth - 1, matrixX));
     const clampedY = Math.max(0, Math.min(this.matrixHeight - 1, matrixY));
 
-    const idx = clampedY * this.matrixWidth + clampedX;
-    const nx = this.nearestX[idx];
-    const ny = this.nearestY[idx];
+    const index = clampedY * this.matrixWidth + clampedX;
+    const nearestX = this.nearestX[index];
+    const nearestY = this.nearestY[index];
 
-    if (nx === -1) return null;
+    if (nearestX === -1) return null;
 
-    const worldNx = this.x - this.matrixHalfWidth + nx;
-    const worldNy = this.y - this.matrixHalfHeight + ny;
-    const dx = particle.x - worldNx;
-    const dy = particle.y - worldNy;
+    const worldNearestX = this.x - this.matrixHalfWidth + nearestX;
+    const worldNearestY = this.y - this.matrixHalfHeight + nearestY;
+    const deltaX = particle.x - worldNearestX;
+    const deltaY = particle.y - worldNearestY;
 
     return {
-      x: worldNx,
-      y: worldNy,
-      distance: Math.sqrt(dx * dx + dy * dy),
+      x: worldNearestX,
+      y: worldNearestY,
+      distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
     };
   }
 
   applyForce(particle: Particle) {
-    const result = this.findNearestCollisionPoint(particle);
-    if (result) {
-      const dist = result.distance;
-      const colorIntensity = Math.min(1, 1 / (1 + dist / 10));
+    const collisionPoint = this.findNearestCollisionPoint(particle);
+    if (collisionPoint) {
+      const distance = collisionPoint.distance;
+      const colorIntensity = Math.min(1, 1 / (1 + distance / 10));
 
-      const c1 = particle.defaultColor.toRgb();
-      const c2 = this.attractorColorObj.toRgb();
+      const defaultColorRgb = particle.defaultColor.toRgb();
+      const attractorColorRgb = this.attractorColorObj.toRgb();
 
-      const r = c1.r + (c2.r - c1.r) * colorIntensity;
-      const g = c1.g + (c2.g - c1.g) * colorIntensity;
-      const b = c1.b + (c2.b - c1.b) * colorIntensity;
+      const red = defaultColorRgb.r + (attractorColorRgb.r - defaultColorRgb.r) * colorIntensity;
+      const green = defaultColorRgb.g + (attractorColorRgb.g - defaultColorRgb.g) * colorIntensity;
+      const blue = defaultColorRgb.b + (attractorColorRgb.b - defaultColorRgb.b) * colorIntensity;
 
-      particle.color = tinycolor({ r, g, b });
-      particle.size = 1 + colorIntensity;
+      particle.color = tinycolor({ r: red, g: green, b: blue });
+      particle.size = Math.max(1, colorIntensity * this.particleActiveSize);
 
       if (this.isPointInside(particle.x, particle.y)) {
         particle.vx *= 0.5;
@@ -332,12 +313,11 @@ export class Attractor {
         return;
       }
 
-      const force = this.force / Math.max(dist, 1) ** 2;
+      const force = this.attractionForce / Math.max(distance, 1) ** 2;
       particle.applyForce({
-        x: (result.x - particle.x) * force,
-        y: (result.y - particle.y) * force,
+        x: (collisionPoint.x - particle.x) * force,
+        y: (collisionPoint.y - particle.y) * force,
       });
     }
   }
 }
-
